@@ -117,6 +117,12 @@ Maintainer: Michael Coracin
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE VARIABLES (GLOBAL) ------------------------------------------- */
+/* clock and log file management */
+
+time_t now_time;
+time_t log_start_time;
+FILE * log_file = NULL;
+char log_file_name[64];
 
 /* signal handling variables */
 volatile bool exit_sig = false; /* 1 -> application terminates cleanly (shut down hardware, close open files, etc) */
@@ -970,6 +976,31 @@ static int send_tx_ack(uint8_t token_h, uint8_t token_l, enum jit_error_e error)
     return send(sock_down, (void *)buff_ack, buff_index, 0);
 }
 
+
+void open_log(void) {
+    int i;
+    char iso_date[20];
+
+    strftime(iso_date,ARRAY_SIZE(iso_date),"%Y%m%dT%H%M%SZ",gmtime(&now_time)); /* format yyyymmddThhmmssZ */
+    log_start_time = now_time; /* keep track of when the log was started, for log rotation */
+
+    sprintf(log_file_name, "pktlog_%s_%s.csv", lgwm_str, iso_date);
+    log_file = fopen(log_file_name, "a"); /* create log file, append if file already exist */
+    if (log_file == NULL) {
+        MSG("ERROR: impossible to create log file %s\n", log_file_name);
+        exit(EXIT_FAILURE);
+    }
+
+    i = fprintf(log_file, "\"gateway ID\",\"node MAC\",\"UTC timestamp\",\"us count\",\"frequency\",\"RF chain\",\"RX chain\",\"status\",\"size\",\"modulation\",\"bandwidth\",\"datarate\",\"coderate\",\"RSSI\",\"SNR\",\"payload\"\n");
+    if (i < 0) {
+        MSG("ERROR: impossible to write to log file %s\n", log_file_name);
+        exit(EXIT_FAILURE);
+    }
+
+    MSG("INFO: Now writing to log file %s\n", log_file_name);
+    return;
+}
+
 /* -------------------------------------------------------------------------- */
 /* --- MAIN FUNCTION -------------------------------------------------------- */
 
@@ -1243,6 +1274,10 @@ int main(void)
     sigaction(SIGINT, &sigact, NULL); /* Ctrl-C */
     sigaction(SIGTERM, &sigact, NULL); /* default "kill" command */
 
+    /* opening log file and writing CSV header*/
+    time(&now_time);
+    open_log();
+
     /* main loop task : statistics collection */
     while (!exit_sig && !quit_sig) {
         /* wait for next reporting interval */
@@ -1443,7 +1478,7 @@ int main(void)
 /* --- THREAD 1: RECEIVING PACKETS AND FORWARDING THEM ---------------------- */
 
 void thread_up(void) {
-    int i, j; /* loop variables */
+    int i, j, x; /* loop variables */
     unsigned pkt_in_dgram; /* nb on Lora packet in the current datagram */
 
     /* allocate memory for packet fetching and processing */
@@ -1540,7 +1575,13 @@ void thread_up(void) {
         pkt_in_dgram = 0;
         for (i=0; i < nb_pkt; ++i) {
             p = &rxpkt[i];
-
+            /*---------------------------------------------------------*/
+            /* log_file for payload */
+            for (x = 0; x < p->size; ++x) {
+                if ((x > 0) && (x%4 == 0)) fputs("-", log_file);
+                fprintf(log_file, "%02X", p->payload[x]);
+            }
+            /*---------------------------------------------------------*/
             /* Get mote information from current packet (addr, fcnt) */
             /* FHDR - DevAddr */
             mote_addr  = p->payload[1];
@@ -2882,6 +2923,7 @@ void thread_valid(void) {
             }
         }
         // printf("Time ref: %s, XTAL correct: %s (%.15lf)\n", ref_valid_local?"valid":"invalid", xtal_correct_ok?"valid":"invalid", xtal_correct); // DEBUG
+        fclose(log_file);        
     }
     MSG("\nINFO: End of validation thread\n");
 }
