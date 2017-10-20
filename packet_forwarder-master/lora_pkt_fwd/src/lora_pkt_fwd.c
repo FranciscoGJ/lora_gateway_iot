@@ -978,27 +978,27 @@ return send(sock_down, (void *)buff_ack, buff_index, 0);
 
 
 void open_log(void) {
-int i;
-char iso_date[20];
+    int i;
+    char iso_date[20];
 
-strftime(iso_date,ARRAY_SIZE(iso_date),"%Y%m%dT%H%M%SZ",gmtime(&now_time)); /* format yyyymmddThhmmssZ */
-log_start_time = now_time; /* keep track of when the log was started, for log rotation */
+    strftime(iso_date,ARRAY_SIZE(iso_date),"%Y%m%dT%H%M%SZ",gmtime(&now_time)); /* format yyyymmddThhmmssZ */
+    log_start_time = now_time; /* keep track of when the log was started, for log rotation */
 
-sprintf(log_file_name, "pktlog_%s_%s.csv", lgwm_str, iso_date);
-log_file = fopen(log_file_name, "a"); /* create log file, append if file already exist */
-if (log_file == NULL) {
-    MSG("ERROR: impossible to create log file %s\n", log_file_name);
-    exit(EXIT_FAILURE);
-}
+    sprintf(log_file_name, "pktlog_%s_%s.csv", lgwm_str, iso_date);
+    log_file = fopen(log_file_name, "a"); /* create log file, append if file already exist */
+    if (log_file == NULL) {
+        MSG("ERROR: impossible to create log file %s\n", log_file_name);
+        exit(EXIT_FAILURE);
+    }
 
-i = fprintf(log_file, "\"gateway ID\",\"node MAC\",\"UTC timestamp\",\"us count\",\"frequency\",\"RF chain\",\"RX chain\",\"status\",\"size\",\"modulation\",\"bandwidth\",\"datarate\",\"coderate\",\"RSSI\",\"SNR\",\"payload\"\n");
-if (i < 0) {
-    MSG("ERROR: impossible to write to log file %s\n", log_file_name);
-    exit(EXIT_FAILURE);
-}
+    i = fprintf(log_file, "\"gateway ID\",\"node MAC\",\"UTC timestamp\",\"us count\",\"frequency\",\"RF chain\",\"RX chain\",\"status\",\"size\",\"modulation\",\"bandwidth\",\"datarate\",\"coderate\",\"RSSI\",\"SNR\",\"payload\"\n");
+    if (i < 0) {
+        MSG("ERROR: impossible to write to log file %s\n", log_file_name);
+        exit(EXIT_FAILURE);
+    }
 
-MSG("INFO: Now writing to log file %s\n", log_file_name);
-return;
+    MSG("INFO: Now writing to log file %s\n", log_file_name);
+    return;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1478,7 +1478,7 @@ exit(EXIT_SUCCESS);
 /* --- THREAD 1: RECEIVING PACKETS AND FORWARDING THEM ---------------------- */
 
 void thread_up(void) {
-int i, j, x; /* loop variables */
+int i, j, l; /* loop variables */
 unsigned pkt_in_dgram; /* nb on Lora packet in the current datagram */
 
 /* allocate memory for packet fetching and processing */
@@ -1577,9 +1577,9 @@ while (!exit_sig && !quit_sig) {
         p = &rxpkt[i];
         /*---------------------------------------------------------*/
         /* log_file for payload */
-        for (x = 0; x < p->size; ++x) {
-            if ((x > 0) && (x%4 == 0)) fputs("-", log_file);
-            fprintf(log_file, "%02X", p->payload[x]);
+        for (l = 0; l < p->size; ++l) {
+            if ((l > 0) && (l%4 == 0)) fputs("-", log_file);
+            fprintf(log_file, "%02X", p->payload[l]);
         }
         /*---------------------------------------------------------*/
         /* Get mote information from current packet (addr, fcnt) */
