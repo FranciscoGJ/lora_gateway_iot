@@ -1,8 +1,11 @@
-var PORT = 1700;
+var PORT = 1680;
 var HOST = '::';
 
 var dgram = require('dgram');
 var server = dgram.createSocket('udp6');
+
+const regex = /\{"rxpk(.*?)\}]}/g;
+let m;
 
 server.on('listening', function () {
     var address = server.address();
@@ -10,7 +13,18 @@ server.on('listening', function () {
 });
 
 server.on('message', function (message, remote) {
-    console.log(remote.address + ':' + remote.port +' - ' + message);
+
+    while ((m = regex.exec(message)) !== null) {
+        // This is necessary to avoid infinite loops with zero-width matches
+        if (m.index === regex.lastIndex) {
+            regex.lastIndex++;
+        }
+        
+        // The result can be accessed through the `m`-variable.
+        m.forEach((match, groupIndex) => {
+            console.log(remote.address + ' ' + remote.port +' = ' `${match}`);
+        });
+    }
 
 });
 
