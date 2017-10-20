@@ -24,6 +24,11 @@ function decode_payload(payload){
     return data;
 }
 
+function parse_packet(packet){
+    packet = JSON.parse(packet);
+    return packet['rxpk'][0]['data'];
+}
+
 server.on('listening', function () {
     var address = server.address();
     console.log('UDP Server listening on ' + address.address + ":" + address.port);
@@ -41,7 +46,7 @@ server.on('message', function (message, remote) {
         // m.forEach((match, groupIndex) => {
             // console.log(remote.address + ' ' + remote.port +' = ' `${match}`);
         //});
-        console.log(decode_payload(m[0]))
+        console.log(decode_payload(parse_packet(m[0])));
     }
 });
 
