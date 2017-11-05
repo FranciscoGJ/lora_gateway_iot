@@ -16,7 +16,7 @@ var db_port = '5984';
 var db_name = 'iotrough';
 
 global.nano = require('nano')({
-    
+
         "url" : 'http://' + db_location + ':' + db_port
 });
 
@@ -54,7 +54,7 @@ function db_check(callback){
                             _id: "info",
                             nodes: []
                         }
-                        
+
                         global.db.insert({views:view_doc,language:"javascript"},'_design/nodes',function(error,body){
                             if(!error){
                                 console.log('inserted design document');
@@ -100,27 +100,27 @@ function data_insert(data){
             db_check(function(check){
                 console.log('inside db check',data_array)
                 if(check){
-                    
+
                     global.db.get('info',{include_docs:true},function(error,info){
                         if(!error){
                             console.log(info);
-    
+
                             let node_obj = {
                                 node_id:data_array[0],
                                 node_name:'nodo '+parseInt(data_array[0],16),
                                 added:(new Date().getTime())
                             }
-    
+
                             if(info.nodes.findIndex(n => n.node_id==node_obj.node_id)==-1){
                                 let nodes = info.nodes;
                                 nodes.push(node_obj);
-    
+
                                 let new_info = {
                                     _id:'info',
                                     _rev:info._rev,
                                     nodes:nodes
                                 }
-    
+
                                 db.insert(new_info,function(err,body){
                                     if(!err){
                                         console.log('database info updated');
@@ -134,7 +134,7 @@ function data_insert(data){
                         }
                         return;
                     })
-    
+
                     let doc = {
                         _id: "measure_"+(new Date().getTime()),
                         node: {
@@ -150,7 +150,7 @@ function data_insert(data){
                         },
                         time:(new Date().getTime())
                     }
-            
+
                     db.insert(doc,function(err,bod){
                         if(err){
                             console.log(err);
@@ -159,7 +159,7 @@ function data_insert(data){
                             console.log('document inserted')
                         }
                     })
-    
+
                 } else {
                     console.log("database error")
                 }
@@ -173,17 +173,17 @@ function data_insert(data){
     }
 }
 
-// payload decoding 
+// payload decoding
 
 function decode_payload(payload){
 
-    // decode a packet 
+    // decode a packet
     var packet = lora_packet.fromWire(new Buffer(payload, 'base64'));
-    // check MIC 
-    var NwkSKey = new Buffer('44024241ed4ce9a68c6a8bc055233fd3', 'hex');
+    // check MIC
+    var NwkSKey = new Buffer('006D0F65000029930C00801016E7C519', 'hex');
     console.log("MIC check=" + (lora_packet.verifyMIC(packet, NwkSKey) ? "OK" : "fail"));
-    // decrypt payload 
-    var AppSKey = new Buffer('2B7E151628AED2A6ABF7158809CF4F3C', 'hex');
+    // decrypt payload
+    var AppSKey = new Buffer('C2B3EFC50005D2000CC5ED0A000029AA', 'hex');
     data = lora_packet.decrypt(packet, AppSKey, NwkSKey).toString()
     console.log("Decrypted='" + data + "'");
     return data;
