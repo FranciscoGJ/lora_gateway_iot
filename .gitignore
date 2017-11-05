@@ -3,3 +3,4 @@
 *.bak
 *.vscode
 *.editorconfig
+/server/node_modules
